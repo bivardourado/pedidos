@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Controle de Pedidos</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+        }
+        
+        form {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .form-input-small {
+            width: 100px;
+        }
+        
+        .form-input-medium {
+            width: 200px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background-color: #45a049;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tfoot th {
+            text-align: right;
+        }
+        
+        .print-button {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Controle de Pedidos</h1>
+
+        <form id="orderForm">
+            <div class="form-group">
+                <label for="customer" class="form-label">Cliente:</label>
+                <input type="text" id="customer" required class="form-input-medium">
+            </div>
+
+            <div class="form-group">
+                <label for="model" class="form-label">Modelo:</label>
+                <input type="text" id="model" required class="form-input-medium">
+            </div>
+
+            <div class="form-group">
+                <label for="color" class="form-label">Cor:</label>
+                <input type="text" id="color" required class="form-input-medium">
+            </div>
+
+            <div class="form-group">
+                <label for="size" class="form-label">Tamanho:</label>
+                <select id="size" required class="form-input-small">
+                    <option value="P">-</option>
+                    <option value="P">P</option>
+                    <option value="M">M</option>
+                    <option value="G">G</option>
+                    <option value="GG">GG</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity" class="form-label">Quantidade:</label>
+                <input type="number" id="quantity" required class="form-input-small">
+            </div>
+
+            <div class="form-group">
+                <label for="price" class="form-label">Preço unitário :</label>
+                <input type="number" id="price" required class="form-input-small" step="0.01">
+            </div>
+
+            <button type="submit" class="btn">Adicionar Pedido</button>
+        </form>
+
+        <h2>Pedidos:</h2>
+
+        <table id="orderTable">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Modelo</th>
+                    <th>Cor</th>
+                    <th>Tamanho</th>
+                    <th>Quantidade</th>
+                    <th>Preço Unitário</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="orderTableBody">
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="6">Total em Reais:</th>
+                    <th id="totalCell">0</th>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="print-button">
+            <button id="printButton" class="btn">Imprimir</button>
+        </div>
+
+        <div class="result">
+            <h2>Quantidade de Modelos</h2>
+            <div id="modelQuantity"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var total = 0;
+            var orders = [];
+
+            // Recuperar os dados do Local Storage, se existirem
+            var storedOrders = localStorage.getItem('orders');
+            if (storedOrders) {
+                orders = JSON.parse(storedOrders);
+                renderOrders();
+                calculateTotal();
+                calculateModelQuantity();
+            }
+
+            document.getElementById('orderForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                var customer = document.getElementById('customer').value;
+                var model = document.getElementById('model').value;
+                var color = document.getElementById('color').value;
+                var size = document.getElementById('size').value;
+                var quantity = parseInt(document.getElementById('quantity').value);
+                var price = parseFloat(document.getElementById('price').value);
+
+                var orderTotal = quantity * price;
+                total += orderTotal;
+
+                var order = {
+                    customer: customer,
+                    model: model,
+                    color: color,
+                    size: size,
+                    quantity: quantity,
+                    price: price,
+                    total: orderTotal
+                };
+                orders.push(order);
+
+                renderOrders();
+                calculateTotal();
+                calculateModelQuantity();
+
+                // Armazenar os dados no Local Storage
+                localStorage.setItem('orders', JSON.stringify(orders));
+
+                document.getElementById('customer').value = '';
+                document.getElementById('model').value = '';
+                document.getElementById('color').value = '';
+                document.getElementById('size').value = 'P';
+                document.getElementById('quantity').value = '';
+                document.getElementById('price').value = '';
+            });
+
+            function renderOrders() {
+                var tableBody = document.getElementById('orderTableBody');
+                tableBody.innerHTML = '';
+
+                for (var i = 0; i < orders.length; i++) {
+                    var order = orders[i];
+
+                    var newRow = tableBody.insertRow();
+
+                    var customerCell = newRow.insertCell(0);
+                    var modelCell = newRow.insertCell(1);
+                    var colorCell = newRow.insertCell(2);
+                    var sizeCell = newRow.insertCell(3);
+                    var quantityCell = newRow.insertCell(4);
+                    var priceCell = newRow.insertCell(5);
+                    var orderTotalCell = newRow.insertCell(6);
+
+                    customerCell.innerHTML = order.customer;
+                    modelCell.innerHTML = order.model;
+                    colorCell.innerHTML = order.color;
+                    sizeCell.innerHTML = order.size;
+                    quantityCell.innerHTML = order.quantity;
+                    priceCell.innerHTML = order.price.toFixed(2);
+                    orderTotalCell.innerHTML = order.total.toFixed(2);
+                }
+            }
+
+            function calculateTotal() {
+                document.getElementById('totalCell').innerHTML = total.toFixed(2);
+            }
+
+            function calculateModelQuantity() {
+                var models = {};
+
+                for (var i = 0; i < orders.length; i++) {
+                    var order = orders[i];
+                    var key = order.model + '-' + order.color + '-' + order.size;
+
+                    if (models.hasOwnProperty(key)) {
+                        models[key] += order.quantity;
+                    } else {
+                        models[key] = order.quantity;
+                    }
+                }
+
+                var modelQuantityElement = document.getElementById('modelQuantity');
+                modelQuantityElement.innerHTML = '';
+
+                var ul = document.createElement('ul');
+                for (var key in models) {
+                    var li = document.createElement('li');
+                    li.textContent = key + ': ' + models[key];
+                    ul.appendChild(li);
+                }
+
+                modelQuantityElement.appendChild(ul);
+            }
+
+            document.getElementById('printButton').addEventListener('click', function() {
+                window.print();
+            });
+        });
+    </script>
+</body>
+
+</html>
