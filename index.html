@@ -168,15 +168,6 @@
             var total = 0;
             var orders = [];
 
-            // Recuperar os dados do Local Storage, se existirem
-            var storedOrders = localStorage.getItem('orders');
-            if (storedOrders) {
-                orders = JSON.parse(storedOrders);
-                renderOrders();
-                calculateTotal();
-                calculateModelQuantity();
-            }
-
             document.getElementById('orderForm').addEventListener('submit', function(event) {
                 event.preventDefault();
 
@@ -204,9 +195,6 @@
                 renderOrders();
                 calculateTotal();
                 calculateModelQuantity();
-
-                // Armazenar os dados no Local Storage
-                localStorage.setItem('orders', JSON.stringify(orders));
 
                 document.getElementById('customer').value = '';
                 document.getElementById('model').value = '';
