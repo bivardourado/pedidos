@@ -160,7 +160,18 @@
 
         <div class="result">
             <h2>Quantidade de Modelos</h2>
-            <div id="modelQuantity"></div>
+            <table id="modelQuantity">
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>Cor</th>
+                        <th>Tamanho</th>
+                        <th>Quantidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -228,26 +239,24 @@
                     colorCell.innerHTML = order.color;
                     sizeCell.innerHTML = order.size;
                     quantityCell.innerHTML = order.quantity;
-                    priceCell.innerHTML = order.price.toFixed(2);
-                    orderTotalCell.innerHTML = order.total.toFixed(2);
-                    actionsCell.innerHTML = '<button class="btn btn-delete" data-index="' + i + '">Excluir</button>';
-                }
+                    priceCell.innerHTML = order.price;
+                    orderTotalCell.innerHTML = order.total;
 
-                var deleteButtons = document.getElementsByClassName('btn-delete');
-                for (var j = 0; j < deleteButtons.length; j++) {
-                    deleteButtons[j].addEventListener('click', function() {
-                        var index = parseInt(this.getAttribute('data-index'));
-                        deleteOrder(index);
-                    });
-                }
-            }
+                    var deleteButton = document.createElement('button');
+                    deleteButton.innerText = 'Remover';
+                    deleteButton.classList.add('btn');
+                    deleteButton.addEventListener('click', (function(index) {
+                        return function() {
+                            total -= orders[index].total;
+                            orders.splice(index, 1);
+                            renderOrders();
+                            calculateTotal();
+                            calculateModelQuantity();
+                        };
+                    })(i));
 
-            function deleteOrder(index) {
-                var deletedOrder = orders.splice(index, 1)[0];
-                total -= deletedOrder.total;
-                renderOrders();
-                calculateTotal();
-                calculateModelQuantity();
+                    actionsCell.appendChild(deleteButton);
+                }
             }
 
             function calculateTotal() {
@@ -255,30 +264,38 @@
             }
 
             function calculateModelQuantity() {
-                var models = {};
+                var modelQuantityTableBody = document.getElementById('modelQuantity').getElementsByTagName('tbody')[0];
+                modelQuantityTableBody.innerHTML = '';
+
+                var modelQuantities = {};
 
                 for (var i = 0; i < orders.length; i++) {
                     var order = orders[i];
-                    var key = order.model + '-' + order.color + '-' + order.size;
+                    var key = order.model + '_' + order.color + '_' + order.size;
 
-                    if (models.hasOwnProperty(key)) {
-                        models[key] += order.quantity;
+                    if (modelQuantities[key]) {
+                        modelQuantities[key] += order.quantity;
                     } else {
-                        models[key] = order.quantity;
+                        modelQuantities[key] = order.quantity;
                     }
                 }
 
-                var modelQuantityElement = document.getElementById('modelQuantity');
-                modelQuantityElement.innerHTML = '';
+                for (var key in modelQuantities) {
+                    if (modelQuantities.hasOwnProperty(key)) {
+                        var newRow = modelQuantityTableBody.insertRow();
 
-                var ul = document.createElement('ul');
-                for (var key in models) {
-                    var li = document.createElement('li');
-                    li.textContent = key + ': ' + models[key];
-                    ul.appendChild(li);
+                        var modelCell = newRow.insertCell(0);
+                        var colorCell = newRow.insertCell(1);
+                        var sizeCell = newRow.insertCell(2);
+                        var quantityCell = newRow.insertCell(3);
+
+                        var parts = key.split('_');
+                        modelCell.innerHTML = parts[0];
+                        colorCell.innerHTML = parts[1];
+                        sizeCell.innerHTML = parts[2];
+                        quantityCell.innerHTML = modelQuantities[key];
+                    }
                 }
-
-                modelQuantityElement.appendChild(ul);
             }
 
             document.getElementById('printButton').addEventListener('click', function() {
