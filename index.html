@@ -90,6 +90,7 @@
         <h1>Controle de Pedidos</h1>
 
         <form id="orderForm">
+            <input type="hidden" id="orderId">
             <div class="form-group">
                 <label for="customer" class="form-label">Cliente:</label>
                 <input type="text" id="customer" required class="form-input-medium">
@@ -127,6 +128,7 @@
             </div>
 
             <button type="submit" class="btn">Adicionar Pedido</button>
+
         </form>
 
         <h2>Pedidos:</h2>
@@ -179,8 +181,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             var total = 0;
             var orders = [];
+            var editOrderId = null;
 
-            document.getElementById('orderForm').addEventListener('submit', function(event) {
+            var orderForm = document.getElementById('orderForm');
+            var updateButton = document.getElementById('updateButton');
+
+            orderForm.addEventListener('submit', function(event) {
                 event.preventDefault();
 
                 var customer = document.getElementById('customer').value;
@@ -191,18 +197,33 @@
                 var price = parseFloat(document.getElementById('price').value);
 
                 var orderTotal = quantity * price;
-                total += orderTotal;
 
-                var order = {
-                    customer: customer,
-                    model: model,
-                    color: color,
-                    size: size,
-                    quantity: quantity,
-                    price: price,
-                    total: orderTotal
-                };
-                orders.push(order);
+                if (editOrderId !== null) {
+                    total -= orders[editOrderId].total;
+                    orders[editOrderId] = {
+                        customer: customer,
+                        model: model,
+                        color: color,
+                        size: size,
+                        quantity: quantity,
+                        price: price,
+                        total: orderTotal
+                    };
+                    editOrderId = null;
+                } else {
+                    var order = {
+                        customer: customer,
+                        model: model,
+                        color: color,
+                        size: size,
+                        quantity: quantity,
+                        price: price,
+                        total: orderTotal
+                    };
+                    orders.push(order);
+                }
+
+                total += orderTotal;
 
                 renderOrders();
                 calculateTotal();
@@ -231,7 +252,7 @@
                     var sizeCell = newRow.insertCell(3);
                     var quantityCell = newRow.insertCell(4);
                     var priceCell = newRow.insertCell(5);
-                    var orderTotalCell = newRow.insertCell(6);
+                    var totalCell = newRow.insertCell(6);
                     var actionsCell = newRow.insertCell(7);
 
                     customerCell.innerHTML = order.customer;
@@ -239,28 +260,50 @@
                     colorCell.innerHTML = order.color;
                     sizeCell.innerHTML = order.size;
                     quantityCell.innerHTML = order.quantity;
-                    priceCell.innerHTML = order.price;
-                    orderTotalCell.innerHTML = order.total;
+                    priceCell.innerHTML = order.price.toFixed(2);
+                    totalCell.innerHTML = order.total.toFixed(2);
+
+                    var editButton = document.createElement('button');
+                    editButton.textContent = 'Editar';
+                    editButton.className = 'btn btn-edit';
+                    editButton.dataset.orderId = i;
+                    editButton.addEventListener('click', function() {
+                        var orderId = parseInt(this.dataset.orderId);
+                        var order = orders[orderId];
+
+                        document.getElementById('customer').value = order.customer;
+                        document.getElementById('model').value = order.model;
+                        document.getElementById('color').value = order.color;
+                        document.getElementById('size').value = order.size;
+                        document.getElementById('quantity').value = order.quantity;
+                        document.getElementById('price').value = order.price.toFixed(2);
+
+                        editOrderId = orderId;
+
+                        updateButton.style.display = 'inline-block';
+                    });
 
                     var deleteButton = document.createElement('button');
-                    deleteButton.innerText = 'Remover';
-                    deleteButton.classList.add('btn');
-                    deleteButton.addEventListener('click', (function(index) {
-                        return function() {
-                            total -= orders[index].total;
-                            orders.splice(index, 1);
-                            renderOrders();
-                            calculateTotal();
-                            calculateModelQuantity();
-                        };
-                    })(i));
+                    deleteButton.textContent = 'Excluir';
+                    deleteButton.className = 'btn btn-delete';
+                    deleteButton.dataset.orderId = i;
+                    deleteButton.addEventListener('click', function() {
+                        var orderId = parseInt(this.dataset.orderId);
+                        total -= orders[orderId].total;
+                        orders.splice(orderId, 1);
+                        renderOrders();
+                        calculateTotal();
+                        calculateModelQuantity();
+                    });
 
+                    actionsCell.appendChild(editButton);
                     actionsCell.appendChild(deleteButton);
                 }
             }
 
             function calculateTotal() {
-                document.getElementById('totalCell').innerHTML = total.toFixed(2);
+                var totalCell = document.getElementById('totalCell');
+                totalCell.innerHTML = total.toFixed(2);
             }
 
             function calculateModelQuantity() {
@@ -280,25 +323,16 @@
                     }
                 }
 
-                for (var key in modelQuantities) {
-                    if (modelQuantities.hasOwnProperty(key)) {
-                        var newRow = modelQuantityTableBody.insertRow();
-
-                        var modelCell = newRow.insertCell(0);
-                        var colorCell = newRow.insertCell(1);
-                        var sizeCell = newRow.insertCell(2);
-                        var quantityCell = newRow.insertCell(3);
-
-                        var parts = key.split('_');
-                        modelCell.innerHTML = parts[0];
-                        colorCell.innerHTML = parts[1];
-                        sizeCell.innerHTML = parts[2];
-                        quantityCell.innerHTML = modelQuantities[key];
-                    }
+                var modelQuantityHTML = '';
+                for (var model in modelQuantities) {
+                    modelQuantityHTML += '<tr><td>' + model.split('_').join('</td><td>') + '</td><td>' + modelQuantities[model] + '</td></tr>';
                 }
+
+                modelQuantityTableBody.innerHTML = modelQuantityHTML;
             }
 
-            document.getElementById('printButton').addEventListener('click', function() {
+            var printButton = document.getElementById('printButton');
+            printButton.addEventListener('click', function() {
                 window.print();
             });
         });
