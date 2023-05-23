@@ -141,6 +141,7 @@
                     <th>Quantidade</th>
                     <th>Preço Unitário</th>
                     <th>Total</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody id="orderTableBody">
@@ -220,6 +221,7 @@
                     var quantityCell = newRow.insertCell(4);
                     var priceCell = newRow.insertCell(5);
                     var orderTotalCell = newRow.insertCell(6);
+                    var actionsCell = newRow.insertCell(7);
 
                     customerCell.innerHTML = order.customer;
                     modelCell.innerHTML = order.model;
@@ -228,7 +230,24 @@
                     quantityCell.innerHTML = order.quantity;
                     priceCell.innerHTML = order.price.toFixed(2);
                     orderTotalCell.innerHTML = order.total.toFixed(2);
+                    actionsCell.innerHTML = '<button class="btn btn-delete" data-index="' + i + '">Excluir</button>';
                 }
+
+                var deleteButtons = document.getElementsByClassName('btn-delete');
+                for (var j = 0; j < deleteButtons.length; j++) {
+                    deleteButtons[j].addEventListener('click', function() {
+                        var index = parseInt(this.getAttribute('data-index'));
+                        deleteOrder(index);
+                    });
+                }
+            }
+
+            function deleteOrder(index) {
+                var deletedOrder = orders.splice(index, 1)[0];
+                total -= deletedOrder.total;
+                renderOrders();
+                calculateTotal();
+                calculateModelQuantity();
             }
 
             function calculateTotal() {
